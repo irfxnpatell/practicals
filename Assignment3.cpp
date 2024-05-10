@@ -1,151 +1,247 @@
-#include<iostream>
+#include<bits/stdc++.h>
 using namespace std;
 
-class node{
-public:
+class Node{
     int data;
-    node* left;
-    node* right;
-    bool leftThread;
-    bool rightThread;
+    Node* left;
+    Node* right;
+    bool lbit, rbit;
 
-    node(int d){
-        this->data = d;
-        this->left = NULL;
-        this->right = NULL;
-        this->leftThread = false;
-        this->rightThread = false;
+public:
+    Node()
+    {
+        data = 0;
+        left = NULL;
+        right = NULL;
+        lbit = 0;
+        rbit = 0;
+    }
+    Node(int data)
+    {
+        this->data = data;
+        left = NULL;
+        right = NULL;
+        lbit = 0;
+        rbit = 0;
+    }
+    friend class TBST;
+};
+
+class TBST{
+    Node* root;
+    Node* head;
+
+public:
+    TBST(){
+        head = root = NULL;
+    }
+
+    Node* getRoot(){
+        return this->root;
+    }
+
+    void insert(int d){
+        // if tree is empty
+        if(root == NULL){
+            head = new Node(-9999);
+            head->right = head;
+
+            root = new Node(d);
+
+            head->left = root;
+            head->lbit = 1;
+            root->left = head;
+            root->right = head;
+            return;
+        }
+        // if tree is not empty
+        else{
+            Node* parent = root;
+            Node* temp = new Node(d);
+
+            while(true){
+                if(d == parent->data){
+                    delete temp;
+                    return;
+                }
+                else if(d < parent->data){
+                    if(parent->lbit == 1){
+                        parent = parent->left;
+                    }
+                    else{
+                        temp->left = parent->left;
+                        temp->right = parent;
+                        parent->left = temp;
+                        parent->lbit = 1;
+                        return;
+                    }
+                }
+                else{
+                    if(parent->rbit == 1){
+                        parent = parent->right;
+                    }
+                    else{
+                        temp->right = parent->right;
+                        temp->left = parent;
+                        parent->right = temp;
+                        parent->rbit = 1;
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    void inorder(){
+        Node* temp = root;
+        while(temp->lbit == 1){
+            temp = temp->left;
+        }
+        while(temp != head){
+            cout<<temp->data<<" ";
+            if(temp->rbit == 1){
+                temp = temp->right;
+                while(temp->lbit == 1){
+                    temp = temp->left;
+                }
+            }
+            else{
+                temp = temp->right;
+            }
+        }
+        cout<<endl;
+    }
+
+    void preorder(){
+        bool flag = 0;
+        Node* temp = root;
+        while(temp != head){
+            if(flag == 0){
+                cout<<temp->data<<" ";
+            }
+            if(flag == 0 && temp->lbit == 1){
+                temp = temp->left;
+            }
+            else{
+                flag = (temp->rbit == 1) ? 0 : 1;
+                temp = temp->right;
+            }
+        }
+        cout<<endl;
+    }
+
+    bool search(int d, Node* &curr, Node* &par){
+        while(curr != head){
+            if(curr->data == d){
+                return 1;
+            }
+            else{
+                par = curr;
+                if(d < curr->data){
+                    curr = curr->left;
+                }
+                else{
+                    curr = curr->right;
+                }
+            }
+        }
+        return false;
+    }
+
+    void deleteNode(Node* &par, Node* &curr){
+        // 2 childs
+        if(curr->lbit == 1 && curr->rbit == 1){
+            Node* temp = curr->right;
+            par = curr;
+            while(temp->lbit == 1){
+                par = temp;
+                temp = temp->left;
+            }
+            curr->data = temp->data;
+            curr = temp;
+            cout<<"Deleting node having 2 links!!!"<<endl;
+        }
+
+        if(curr->lbit == 0 && curr->rbit == 0){
+            if(par->left == curr){
+                cout<<"Deleting left leaf "<<endl;
+                par->left = curr->left;
+                par->lbit = 0;
+            }
+            else{
+                cout<<"Deleting right leaf "<<endl;
+                par->right = curr->right;
+                par->rbit = 0;
+            }
+            delete curr;
+        }
+
+        if(curr->lbit == 1 && curr->rbit == 0){
+            Node* temp = curr->left;
+            if(par->left == curr){
+                par->left = temp;
+            }
+            else{
+                par->right = temp;
+            }
+            while(temp->rbit == 1){
+                temp = temp->right;
+            }
+            temp->right = curr->right;
+            delete curr;
+        }
+
+        if(curr->lbit == 0 && curr->rbit == 1){
+            Node* temp = curr->right;
+            if(par->left == curr){
+                par->left = temp;
+            }
+            else{
+                par->right = temp;
+            }
+            while(temp->lbit == 1){
+                temp = temp->left;
+            }
+            temp->left = curr->left;
+            delete curr;
+        }
     }
 };
 
-// Function to find a node with given key in the threaded binary tree
-node* search(node* root, int key) {
-    while (root != NULL) {
-        if (key == root->data)
-            return root;
-        else if (key < root->data)
-            root = root->left;
-        else
-            root = root->right;
-    }
-    return NULL;
-}
-
-// Function to delete a node from the threaded binary tree
-node* deleteNode(node* root, int key) {
-    // Find the node to be deleted
-    node* target = search(root, key);
-    if (target == NULL) {
-        cout << "Node with key " << key << " not found in the tree." << endl;
-        return root;
-    }
-
-    // Case 2: Node to be deleted has two children
-    if (!target->leftThread && !target->rightThread) {
-        node* inorderSuccessor = target->right;
-        while (!inorderSuccessor->leftThread) {
-            inorderSuccessor = inorderSuccessor->left;
-        }
-        target->data = inorderSuccessor->data;
-        return deleteNode(root, inorderSuccessor->data);
-    }
-
-    return root;
-}
-
-// Function to perform threaded inorder traversal recursively
-void threadedInorderUtil(node* root){
-    if(root == NULL)
-        return;
-    node* leftmost = root;
-    while(leftmost->left != NULL && !leftmost->leftThread)
-        leftmost = leftmost->left;
-    while(leftmost != NULL){
-        cout << leftmost->data << " ";
-        if(leftmost->rightThread)
-            leftmost = leftmost->right;
-        else
-            leftmost = leftmost->right;
-    }
-}
-
-// Function to perform threaded inorder traversal
-void threadedInorder(node* root){
-    threadedInorderUtil(root);
-    cout << endl;
-}
-
-// Function to perform threaded preorder traversal
-void threadedPreorder(node* root){
-    if(root == NULL)
-        return;
-    node* current = root;
-    while(current != NULL){
-        cout << current->data << " ";
-        if(!current->leftThread)
-            current = current->left;
-        else if(!current->rightThread)
-            current = current->right;
-        else{
-            while(current != NULL && current->rightThread)
-                current = current->right;
-            if(current != NULL)
-                current = current->right;
-        }
-    }
-    cout << endl;
-}
-
-// Function to perform threaded postorder traversal
-void threadedPostorder(node* root){
-    if(root == NULL)
-        return;
-    node* current = root;
-    while(current != NULL && !current->leftThread)
-        current = current->left;
-    while(current != NULL){
-        cout << current->data << " ";
-        if(current->rightThread)
-            current = current->right;
-        else{
-            current = current->right;
-            while(current != NULL && !current->leftThread)
-                current = current->left;
-        }
-    }
-    cout << endl;
-}
-
 int main(){
-    // Creating a threaded binary tree
-    node* root = new node(50);
-    root->left = new node(30);
-    root->left->left = new node(20);
-    root->left->right = new node(40);
-    root->right = new node(70);
-    root->right->left = new node(60);
-    root->right->right = new node(80);
-    root->left->rightThread = true;
-    root->right->leftThread = true;
 
-    // Threaded inorder traversal before deletion
-    cout << "Threaded inorder traversal before deletion is : ";
-    threadedInorder(root);
+    TBST tst;
+    int n;
+    cout<<"Enter no of nodes: ";
+    cin>>n;
+    int val;
+    while(n--){
+        cout<<"Enter value: ";
+        cin>>val;
+        tst.insert(val);
+    }
+    cout<<endl;
+    tst.inorder();
+    cout<<endl;
+    tst.preorder();
+    cout<<endl;
 
-    // Deleting a node with two children (Case 2)
-    root = deleteNode(root, 30);
+    int del;
+    cout<<"Enter no to delete: ";
+    cin>>del;
 
-    // Threaded inorder traversal after deletion
-    cout << "Threaded inorder traversal after deletion is : ";
-    threadedInorder(root);
+    Node* curr = tst.getRoot();
+    Node* par = NULL;
 
-    // Threaded preorder traversal
-    cout << "Threaded preorder traversal is : ";
-    threadedPreorder(root);
-
-    // Threaded postorder traversal
-    cout << "Threaded postorder traversal is : ";
-    threadedPostorder(root);
-
+    if(tst.search(del, curr, par)){
+        tst.deleteNode(par, curr);
+        cout<<del<<" Deleted"<<endl;
+    }
+    else{
+        cout<<"Not found"<<endl;
+    }
+    
+    cout<<endl;
+    tst.inorder();
     return 0;
 }
